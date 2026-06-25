@@ -1,6 +1,7 @@
 import { eq } from 'drizzle-orm'
 import { db } from '../db/client'
 import { courses, scrapeRuns } from '../db/schema'
+import { cleanTitle } from '../lib/titleCleaner'
 import { normalizeTitleCore, scrapeCit } from './cit'
 import { scrapeTumonline } from './tumonline'
 
@@ -21,7 +22,9 @@ export async function runScrape(): Promise<{ scrapeRunId: number; coursesUpserte
       .map((c) => ({
         ...c,
         scrapeRunId: run.id,
+        // Use original title for leftover matching (CIT titles still have type prefixes)
         hasLeftoverSpots: leftoverCores.has(normalizeTitleCore(c.title)),
+        title: cleanTitle(c.title),
       }))
 
     if (rows.length > 0) {
