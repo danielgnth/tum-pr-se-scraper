@@ -45,3 +45,8 @@ export const coursesRoute = new Hono()
     if (!course) return c.json({ error: 'Not found' }, 404)
     return c.json(course)
   })
+  .delete('/', async (c) => {
+    await db.delete(courses)
+    await db.delete(scrapeRuns)
+    return c.json({ message: 'Cleared' })
+  })

@@ -18,11 +18,13 @@ export function StatusBanner({ onRefreshComplete }: Props) {
     coursesUpserted: number | null
   } | null>(null)
   const [scraping, setScraping] = useState(false)
+  const [clearing, setClearing] = useState(false)
 
   const loadLatestRun = useCallback(async () => {
     const res = await api.api['scrape-runs'].$get()
     const runs = (await res.json()) as ScrapeRunRecord[]
     if (runs.length > 0) setLastRun(runs[0])
+    else setLastRun(null)
   }, [])
 
   useEffect(() => {
@@ -44,6 +46,16 @@ export function StatusBanner({ onRefreshComplete }: Props) {
     }, 2000)
   }
 
+  async function handleClear() {
+    setClearing(true)
+    await api.api.courses.$delete()
+    setLastRun(null)
+    onRefreshComplete()
+    setClearing(false)
+  }
+
+  const busy = scraping || clearing
+
   return (
     <footer className="border-t px-4 py-2 flex items-center justify-between text-sm text-muted-foreground">
       <span>
@@ -51,9 +63,14 @@ export function StatusBanner({ onRefreshComplete }: Props) {
         {lastRun?.finishedAt ? new Date(lastRun.finishedAt).toLocaleString() : 'Never'}
         {lastRun?.coursesUpserted != null && ` · ${lastRun.coursesUpserted} courses`}
       </span>
-      <Button size="sm" variant="outline" onClick={handleRefresh} disabled={scraping}>
-        {scraping ? 'Scraping…' : 'Refresh'}
-      </Button>
+      <div className="flex gap-2">
+        <Button size="sm" variant="ghost" onClick={handleClear} disabled={busy}>
+          {clearing ? 'Clearing…' : 'Clear'}
+        </Button>
+        <Button size="sm" variant="outline" onClick={handleRefresh} disabled={busy}>
+          {scraping ? 'Scraping…' : 'Refresh'}
+        </Button>
+      </div>
     </footer>
   )
 }
