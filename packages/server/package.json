@@ -2,6 +2,12 @@
   "name": "server",
   "private": true,
   "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./src/db/schema": "./src/db/schema.ts",
+    "./src/lib/typeMap": "./src/lib/typeMap.ts",
+    "./src/lib/tumonlineParser": "./src/lib/tumonlineParser.ts"
+  },
   "scripts": {
     "dev": "bun --watch src/index.ts",
     "start": "bun src/index.ts",
