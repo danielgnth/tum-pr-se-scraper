@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router'
 import type { Course } from 'server/src/db/schema'
 import { api } from '../api/client'
@@ -6,12 +6,9 @@ import { CourseCard } from '../components/CourseCard'
 import { FilterBar } from '../components/FilterBar'
 import { StatusBanner } from '../components/StatusBanner'
 
-const SCROLL_KEY = 'courseListScroll'
-
 export default function CourseList() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [courses, setCourses] = useState<Course[]>([])
-  const scrollRestored = useRef(false)
 
   // All filter/sort state lives in the URL so it survives back-navigation
   const search = searchParams.get('q') ?? ''
@@ -63,25 +60,6 @@ export default function CourseList() {
   useEffect(() => {
     loadCourses()
   }, [loadCourses])
-
-  // Restore scroll position after courses render (must wait for content to exist)
-  useEffect(() => {
-    if (courses.length > 0 && !scrollRestored.current) {
-      scrollRestored.current = true
-      const saved = sessionStorage.getItem(SCROLL_KEY)
-      if (saved) {
-        sessionStorage.removeItem(SCROLL_KEY)
-        requestAnimationFrame(() => window.scrollTo({ top: Number(saved), behavior: 'instant' }))
-      }
-    }
-  }, [courses])
-
-  // Save scroll position when leaving the list
-  useEffect(() => {
-    return () => {
-      sessionStorage.setItem(SCROLL_KEY, String(window.scrollY))
-    }
-  }, [])
 
   const filtered = useMemo(() => {
     let list = courses
