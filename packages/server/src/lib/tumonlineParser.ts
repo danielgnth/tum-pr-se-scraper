@@ -1,4 +1,9 @@
 import { XMLParser } from 'fast-xml-parser'
+import {
+  extractPreliminaryMeetingDate,
+  extractPreliminaryMeetingLink,
+  extractPreliminaryMeetingPlatform,
+} from './registrationParser'
 
 export interface ParsedCourse {
   tumonlineId: string
@@ -16,6 +21,9 @@ export interface ParsedCourseDetail {
   teachingMethod: string | null
   registrationInfo: string | null
   onlineMode: 'online' | 'in-person' | null
+  preliminaryMeetingDate: string | null
+  preliminaryMeetingPlatform: string | null
+  preliminaryMeetingLink: string | null
 }
 
 const listParser = new XMLParser({
@@ -90,9 +98,15 @@ export function parseDetailResponse(xml: string): ParsedCourseDetail {
   const courseObjective = textVal(descDto.courseObjective)
   const prerequisites = textVal(descDto.previousKnowledge)
   const teachingMethod = textVal(descDto.teachingMethod)
-  const registrationInfo = textVal(descDto.courseRegistrationInfo)
+  const registrationInfo =
+    [textVal(descDto.courseRegistrationInfo), textVal(descDto.additionalInformation?.comments)]
+      .filter(Boolean)
+      .join('\n\n') || null
 
   const onlineMode = detectOnlineMode([registrationInfo, description, teachingMethod])
+
+  const platform = registrationInfo ? extractPreliminaryMeetingPlatform(registrationInfo) : null
+  const isOnlinePlatform = platform && platform !== 'In person'
 
   return {
     language,
@@ -102,5 +116,11 @@ export function parseDetailResponse(xml: string): ParsedCourseDetail {
     teachingMethod,
     registrationInfo,
     onlineMode,
+    preliminaryMeetingDate: registrationInfo
+      ? extractPreliminaryMeetingDate(registrationInfo)
+      : null,
+    preliminaryMeetingPlatform: platform,
+    preliminaryMeetingLink:
+      isOnlinePlatform && registrationInfo ? extractPreliminaryMeetingLink(registrationInfo) : null,
   }
 }
