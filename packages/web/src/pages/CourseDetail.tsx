@@ -26,7 +26,9 @@ export default function CourseDetail() {
       </Button>
       <div className="flex items-start justify-between gap-2">
         <h1 className="text-xl font-bold leading-snug">{course.title}</h1>
-        {course.hasLeftoverSpots && <Badge variant="destructive">Spots available</Badge>}
+        {course.hasLeftoverSpots && (
+          <Badge className="bg-green-600 text-white hover:bg-green-600">Spots available</Badge>
+        )}
       </div>
       <div className="flex flex-wrap gap-2 text-sm">
         <Badge variant="secondary">{course.type}</Badge>

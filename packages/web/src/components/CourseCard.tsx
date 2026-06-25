@@ -11,7 +11,7 @@ export function CourseCard({ course }: { course: Course }) {
           <div className="flex items-start justify-between gap-2">
             <CardTitle className="text-base leading-snug">{course.title}</CardTitle>
             {course.hasLeftoverSpots && (
-              <Badge variant="destructive" className="shrink-0 text-xs">
+              <Badge className="shrink-0 text-xs bg-green-600 text-white hover:bg-green-600">
                 Spots available
               </Badge>
             )}
