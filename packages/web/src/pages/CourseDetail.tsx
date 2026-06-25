@@ -1,5 +1,7 @@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { isMeetingOutdated, parseMeetingDate, relativeMeetingTime } from '@/lib/meetingDate'
+import { cn } from '@/lib/utils'
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
 import type { Course } from 'server/src/db/schema'
@@ -43,6 +45,65 @@ export default function CourseDetail() {
           <strong>Instructors:</strong> {(course.instructors as string[]).join(', ')}
         </p>
       )}
+      {(course.preliminaryMeetingDate ||
+        course.preliminaryMeetingPlatform ||
+        course.preliminaryMeetingLink) &&
+        (() => {
+          const meetingDate = parseMeetingDate(course.preliminaryMeetingDate)
+          const isPast = meetingDate ? meetingDate.getTime() < Date.now() : null
+          const isOutdated = meetingDate ? isMeetingOutdated(meetingDate) : false
+          return (
+            <section
+              className={cn(
+                'rounded-lg border p-3 flex flex-col gap-1.5',
+                isOutdated && 'border-amber-200 bg-amber-50/50',
+                !isOutdated && isPast === false && 'border-green-200 bg-green-50',
+                !isOutdated && isPast === true && 'border-border bg-muted/40',
+              )}
+            >
+              <div className="flex items-center gap-2">
+                <h2 className="font-semibold text-sm">Preliminary Meeting</h2>
+                {meetingDate && (
+                  <span
+                    className={cn(
+                      'text-xs font-medium rounded-full px-2 py-0.5',
+                      isOutdated
+                        ? 'bg-amber-100 text-amber-700'
+                        : isPast
+                          ? 'bg-muted text-muted-foreground'
+                          : 'bg-green-100 text-green-700',
+                    )}
+                  >
+                    {isOutdated ? 'Outdated' : isPast ? 'Past' : 'Upcoming'} ·{' '}
+                    {relativeMeetingTime(meetingDate)}
+                  </span>
+                )}
+              </div>
+              <div className="flex flex-wrap items-center gap-2 text-sm">
+                {course.preliminaryMeetingDate && (
+                  <span
+                    className={cn('font-mono', isPast ? 'text-muted-foreground' : 'text-green-800')}
+                  >
+                    {course.preliminaryMeetingDate}
+                  </span>
+                )}
+                {course.preliminaryMeetingPlatform && (
+                  <Badge variant="outline">{course.preliminaryMeetingPlatform}</Badge>
+                )}
+                {course.preliminaryMeetingLink && (
+                  <a
+                    href={course.preliminaryMeetingLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline"
+                  >
+                    Join meeting →
+                  </a>
+                )}
+              </div>
+            </section>
+          )
+        })()}
       {course.registrationInfo && (
         <section>
           <h2 className="font-semibold mb-1">Registration & Preliminary Meeting</h2>
@@ -89,6 +150,12 @@ export default function CourseDetail() {
       >
         View on TUMonline →
       </a>
+      <details className="text-xs text-muted-foreground">
+        <summary className="cursor-pointer select-none">Debug (ID: {course.id})</summary>
+        <pre className="mt-2 p-3 bg-muted rounded overflow-auto text-xs whitespace-pre-wrap break-all">
+          {JSON.stringify(course, null, 2)}
+        </pre>
+      </details>
     </div>
   )
 }

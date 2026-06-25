@@ -1,4 +1,4 @@
-import { Route, Routes, ScrollRestoration } from 'react-router'
+import { Route, Routes } from 'react-router'
 import CourseDetail from './pages/CourseDetail'
 import CourseList from './pages/CourseList'
 
