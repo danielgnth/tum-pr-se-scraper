@@ -1,0 +1,17 @@
+{
+  "name": "tum-pr-se-scraper",
+  "private": true,
+  "workspaces": ["packages/*"],
+  "scripts": {
+    "prepare": "husky",
+    "lint": "biome check ."
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "husky": "^9.1.0",
+    "lint-staged": "^15.2.0"
+  },
+  "lint-staged": {
+    "**/*.{ts,tsx,json}": ["biome check --apply --no-errors-on-unmatched"]
+  }
+}

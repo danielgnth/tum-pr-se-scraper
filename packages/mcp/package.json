@@ -1,0 +1,17 @@
+{
+  "name": "mcp",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun --watch src/index.ts",
+    "start": "bun src/index.ts"
+  },
+  "dependencies": {
+    "server": "workspace:*",
+    "hono": "^4.7.0",
+    "@modelcontextprotocol/sdk": "^1.12.0"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  }
+}
