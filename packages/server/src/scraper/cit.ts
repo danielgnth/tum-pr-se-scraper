@@ -7,8 +7,8 @@ const COURSE_NUMBER_RE = /\bIN\d{4,5}\b/g
 
 export async function scrapeCit(): Promise<Set<string>> {
   const found = new Set<string>()
-  const queue = await RequestQueue.open()
-  await queue.addRequest({ url: CIT_URL })
+  const queue = await RequestQueue.open(`cit-${Date.now()}`)
+  await queue.addRequest({ url: CIT_URL, uniqueKey: CIT_URL })
 
   const crawler = new CheerioCrawler({
     requestQueue: queue,
