@@ -28,18 +28,31 @@ const LIST_XML = `<?xml version="1.0" encoding="UTF-8"?>
 </cpCourseOverviewDto>`
 
 const DETAIL_XML = `<?xml version="1.0" encoding="UTF-8"?>
-<cpCourseDetailDto>
-  <id>950883276</id>
-  <language>
-    <key>EN</key>
-  </language>
-  <courseContent>
-    <value>Based on literature research and hands-on implementation...</value>
-  </courseContent>
-  <prerequisites>
-    <value>Master-level background in information systems or computer science.</value>
-  </prerequisites>
-</cpCourseDetailDto>`
+<resources>
+  <resource>
+    <content>
+      <cpCourseDetailDto>
+        <id>950883276</id>
+        <cpCourseDto>
+          <courseLanguageDtos>
+            <languageDto>
+              <key>EN</key>
+            </languageDto>
+            <mainLanguage>true</mainLanguage>
+          </courseLanguageDtos>
+        </cpCourseDto>
+        <cpCourseDescriptionDto>
+          <courseContent>
+            <value>Based on literature research and hands-on implementation...</value>
+          </courseContent>
+          <previousKnowledge>
+            <value>Master-level background in information systems or computer science.</value>
+          </previousKnowledge>
+        </cpCourseDescriptionDto>
+      </cpCourseDetailDto>
+    </content>
+  </resource>
+</resources>`
 
 describe('parseListResponse', () => {
   test('extracts id, title, typeKey, instructors, courseNumber, termId', () => {
