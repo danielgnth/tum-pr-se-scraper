@@ -1,11 +1,15 @@
 import { Button } from '@/components/ui/button'
 import { useCoursePreferences } from '@/lib/coursePreferences'
 import { parseMeetingDate } from '@/lib/meetingDate'
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useSearchParams } from 'react-router'
+import { useTheme } from '@/lib/useTheme'
+import { Moon, Sun } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { useLoaderData, useRevalidator, useSearchParams } from 'react-router'
+import type { ShouldRevalidateFunctionArgs } from 'react-router'
 import type { Course } from 'server/src/db/schema'
 import { api } from '../api/client'
 import { CourseCard } from '../components/CourseCard'
+import { FavoritesMeetings } from '../components/FavoritesMeetings'
 import { FilterBar } from '../components/FilterBar'
 import { MatchingTimeline } from '../components/MatchingTimeline'
 
@@ -15,10 +19,45 @@ interface ScrapeRun {
   status: string
 }
 
+export async function clientLoader({ request }: { request: Request }) {
+  const url = new URL(request.url)
+  const typesParam = url.searchParams.get('types') ?? ''
+  const leftoverOnly = url.searchParams.get('leftover') === 'true'
+  const query: Record<string, string> = {}
+  if (typesParam) query.type = typesParam
+  if (leftoverOnly) query.leftoverOnly = 'true'
+  const [coursesRes, runsRes] = await Promise.all([
+    api.api.courses.$get({ query }),
+    api.api['scrape-runs'].$get(),
+  ])
+  return {
+    courses: (await coursesRes.json()) as Course[],
+    lastRun: ((await runsRes.json()) as ScrapeRun[])[0] ?? null,
+  }
+}
+clientLoader.hydrate = true as const
+
+// Only re-run the loader when filter params that affect the API query change
+export function shouldRevalidate({
+  currentUrl,
+  nextUrl,
+  defaultShouldRevalidate,
+}: ShouldRevalidateFunctionArgs) {
+  if (
+    currentUrl.searchParams.get('types') !== nextUrl.searchParams.get('types') ||
+    currentUrl.searchParams.get('leftover') !== nextUrl.searchParams.get('leftover')
+  ) {
+    return true
+  }
+  return defaultShouldRevalidate
+}
+
 export default function CourseList() {
+  const loaderData = useLoaderData<typeof clientLoader>()
+  const courses = loaderData?.courses ?? []
+  const lastRun = loaderData?.lastRun ?? null
+  const { revalidate } = useRevalidator()
   const [searchParams, setSearchParams] = useSearchParams()
-  const [courses, setCourses] = useState<Course[]>([])
-  const [lastRun, setLastRun] = useState<ScrapeRun | null>(null)
   const [scraping, setScraping] = useState(false)
   const [clearing, setClearing] = useState(false)
 
@@ -71,25 +110,6 @@ export default function CourseList() {
     })
   }
 
-  const loadCourses = useCallback(async () => {
-    const query: Record<string, string> = {}
-    if (typesParam) query.type = typesParam
-    if (leftoverOnly) query.leftoverOnly = 'true'
-    const res = await api.api.courses.$get({ query })
-    setCourses((await res.json()) as Course[])
-  }, [typesParam, leftoverOnly])
-
-  const loadLatestRun = useCallback(async () => {
-    const res = await api.api['scrape-runs'].$get()
-    const runs = (await res.json()) as ScrapeRun[]
-    setLastRun(runs[0] ?? null)
-  }, [])
-
-  useEffect(() => {
-    loadCourses()
-    loadLatestRun()
-  }, [loadCourses, loadLatestRun])
-
   async function handleRefresh() {
     setScraping(true)
     await api.api.scrape.$post()
@@ -99,8 +119,7 @@ export default function CourseList() {
       if (runs[0]?.status === 'success' || runs[0]?.status === 'error') {
         clearInterval(poll)
         setScraping(false)
-        setLastRun(runs[0])
-        loadCourses()
+        revalidate()
       }
     }, 2000)
   }
@@ -108,14 +127,14 @@ export default function CourseList() {
   async function handleClear() {
     setClearing(true)
     await api.api.courses.$delete()
-    setLastRun(null)
-    setCourses([])
     setClearing(false)
+    revalidate()
   }
 
   const busy = scraping || clearing
+  const { theme, toggle: toggleTheme } = useTheme()
 
-  const { favorites, dismissed, toggleFavorite, toggleDismiss } = useCoursePreferences()
+  const { favorites, dismissed, notes, toggleFavorite, toggleDismiss } = useCoursePreferences()
   const [showDismissed, setShowDismissed] = useState(false)
 
   const { favList, normalList, dismissedList } = useMemo(() => {
@@ -150,11 +169,11 @@ export default function CourseList() {
     })
 
     return {
-      favList: sorted.filter((c) => favorites.has(String(c.id))),
+      favList: sorted.filter((c) => favorites.has(c.tumonlineId)),
       normalList: sorted.filter(
-        (c) => !favorites.has(String(c.id)) && !dismissed.has(String(c.id)),
+        (c) => !favorites.has(c.tumonlineId) && !dismissed.has(c.tumonlineId),
       ),
-      dismissedList: sorted.filter((c) => dismissed.has(String(c.id))),
+      dismissedList: sorted.filter((c) => dismissed.has(c.tumonlineId)),
     }
   }, [courses, search, selectedPlatforms, sortBy, favorites, dismissed])
 
@@ -172,6 +191,14 @@ export default function CourseList() {
       <div className="flex items-center justify-between gap-4">
         <h1 className="text-2xl font-bold">TUM Practical & Seminar Courses</h1>
         <div className="flex items-center gap-2 shrink-0">
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={toggleTheme}
+            title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+          >
+            {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </Button>
           <Button size="sm" variant="ghost" onClick={handleClear} disabled={busy}>
             {clearing ? 'Clearing…' : 'Clear'}
           </Button>
@@ -198,18 +225,26 @@ export default function CourseList() {
         {lastRun?.coursesUpserted != null && ` · ${lastRun.coursesUpserted} total`}
         {' · '}Last scraped: {lastScrapedLabel}
       </p>
+      {favList.length > 0 && <FavoritesMeetings favorites={favorites} courses={courses} />}
       <div className="flex flex-col gap-3">
         {favList.map((c) => (
           <CourseCard
             key={c.id}
             course={c}
             isFavorite
+            note={notes[c.tumonlineId]}
             onFavorite={toggleFavorite}
             onDismiss={toggleDismiss}
           />
         ))}
         {normalList.map((c) => (
-          <CourseCard key={c.id} course={c} onFavorite={toggleFavorite} onDismiss={toggleDismiss} />
+          <CourseCard
+            key={c.id}
+            course={c}
+            note={notes[c.tumonlineId]}
+            onFavorite={toggleFavorite}
+            onDismiss={toggleDismiss}
+          />
         ))}
       </div>
       {dismissedList.length > 0 && (
@@ -229,6 +264,7 @@ export default function CourseList() {
                   key={c.id}
                   course={c}
                   isDismissed
+                  note={notes[c.tumonlineId]}
                   onFavorite={toggleFavorite}
                   onDismiss={toggleDismiss}
                 />

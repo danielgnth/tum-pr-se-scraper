@@ -12,9 +12,18 @@ function saveSet(key: string, set: Set<string>) {
   localStorage.setItem(key, JSON.stringify([...set]))
 }
 
+function loadNotes(): Record<string, string> {
+  try {
+    return JSON.parse(localStorage.getItem('course-notes') ?? '{}') as Record<string, string>
+  } catch {
+    return {}
+  }
+}
+
 export function useCoursePreferences() {
   const [favorites, setFavorites] = useState<Set<string>>(() => loadSet('course-favorites'))
   const [dismissed, setDismissed] = useState<Set<string>>(() => loadSet('course-dismissed'))
+  const [notes, setNotesState] = useState<Record<string, string>>(loadNotes)
 
   const toggleFavorite = useCallback((id: string) => {
     setFavorites((prev) => {
@@ -50,5 +59,15 @@ export function useCoursePreferences() {
     })
   }, [])
 
-  return { favorites, dismissed, toggleFavorite, toggleDismiss }
+  const setNote = useCallback((id: string, text: string) => {
+    setNotesState((prev) => {
+      const next = { ...prev }
+      if (text.trim()) next[id] = text
+      else delete next[id]
+      localStorage.setItem('course-notes', JSON.stringify(next))
+      return next
+    })
+  }, [])
+
+  return { favorites, dismissed, toggleFavorite, toggleDismiss, notes, setNote }
 }
