@@ -1,32 +1,87 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router'
 import type { Course } from 'server/src/db/schema'
 import { api } from '../api/client'
 import { CourseCard } from '../components/CourseCard'
 import { FilterBar } from '../components/FilterBar'
 import { StatusBanner } from '../components/StatusBanner'
 
-export default function CourseList() {
-  const [courses, setCourses] = useState<Course[]>([])
-  const [search, setSearch] = useState('')
-  const [selectedTypes, setSelectedTypes] = useState<string[]>([])
-  const [leftoverOnly, setLeftoverOnly] = useState(false)
-  const [sortBy, setSortBy] = useState<'title' | 'ects'>('title')
+const SCROLL_KEY = 'courseListScroll'
 
+export default function CourseList() {
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [courses, setCourses] = useState<Course[]>([])
+  const scrollRestored = useRef(false)
+
+  // All filter/sort state lives in the URL so it survives back-navigation
+  const search = searchParams.get('q') ?? ''
+  const typesParam = searchParams.get('types') ?? ''
+  const selectedTypes = typesParam ? typesParam.split(',') : []
+  const leftoverOnly = searchParams.get('leftover') === 'true'
+  const sortBy = (searchParams.get('sort') as 'title' | 'ects') ?? 'title'
+
+  function updateParams(updater: (p: URLSearchParams) => void) {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev)
+        updater(next)
+        return next
+      },
+      { replace: true },
+    )
+  }
+
+  function setSearch(v: string) {
+    updateParams((p) => (v ? p.set('q', v) : p.delete('q')))
+  }
+
+  function toggleType(t: string) {
+    updateParams((p) => {
+      const current = p.get('types')?.split(',').filter(Boolean) ?? []
+      const next = current.includes(t) ? current.filter((x) => x !== t) : [...current, t]
+      next.length ? p.set('types', next.join(',')) : p.delete('types')
+    })
+  }
+
+  function setLeftoverOnly(v: boolean) {
+    updateParams((p) => (v ? p.set('leftover', 'true') : p.delete('leftover')))
+  }
+
+  function setSortBy(s: 'title' | 'ects') {
+    updateParams((p) => (s !== 'title' ? p.set('sort', s) : p.delete('sort')))
+  }
+
+  // Only refetch when API-side filters change (search and sort are client-side)
   const loadCourses = useCallback(async () => {
     const query: Record<string, string> = {}
-    if (selectedTypes.length) query.type = selectedTypes.join(',')
+    if (typesParam) query.type = typesParam
     if (leftoverOnly) query.leftoverOnly = 'true'
     const res = await api.api.courses.$get({ query })
     setCourses((await res.json()) as Course[])
-  }, [selectedTypes, leftoverOnly])
+  }, [typesParam, leftoverOnly])
 
   useEffect(() => {
     loadCourses()
   }, [loadCourses])
 
-  function toggleType(t: string) {
-    setSelectedTypes((prev) => (prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]))
-  }
+  // Restore scroll position after courses render (must wait for content to exist)
+  useEffect(() => {
+    if (courses.length > 0 && !scrollRestored.current) {
+      scrollRestored.current = true
+      const saved = sessionStorage.getItem(SCROLL_KEY)
+      if (saved) {
+        sessionStorage.removeItem(SCROLL_KEY)
+        requestAnimationFrame(() => window.scrollTo({ top: Number(saved), behavior: 'instant' }))
+      }
+    }
+  }, [courses])
+
+  // Save scroll position when leaving the list
+  useEffect(() => {
+    return () => {
+      sessionStorage.setItem(SCROLL_KEY, String(window.scrollY))
+    }
+  }, [])
 
   const filtered = useMemo(() => {
     let list = courses
@@ -54,7 +109,7 @@ export default function CourseList() {
           selectedTypes={selectedTypes}
           onTypeToggle={toggleType}
           leftoverOnly={leftoverOnly}
-          onLeftoverToggle={() => setLeftoverOnly((v) => !v)}
+          onLeftoverToggle={() => setLeftoverOnly(!leftoverOnly)}
           sortBy={sortBy}
           onSortChange={setSortBy}
         />
