@@ -18,6 +18,7 @@ const COURSE_NUMBERS = [
 
 const LIST_BASE = 'https://campus.tum.de/tumonline/ee/rest/slc.tm.cp/student/courses'
 const DETAIL_BASE = 'https://campus.tum.de/tumonline/ee/rest/slc.tm.cp/student/courses'
+const UI_BASE = 'https://campus.tum.de/tumonline/ee/ui/ca2/app/desktop/#/slc.tm.cp/student/courses'
 
 export type ScrapedCourse = Omit<NewCourse, 'scrapeRunId'>
 
@@ -67,7 +68,7 @@ export async function scrapeTumonline(termId: string): Promise<ScrapedCourse[]> 
             prerequisites: null,
             maxParticipants: null,
             instructors: course.instructors,
-            tumonlineUrl: `${DETAIL_BASE}/${course.tumonlineId}`,
+            tumonlineUrl: `${UI_BASE}/${course.tumonlineId}?$ctx=lang=DE&$scrollTo=toc_overview`,
             hasLeftoverSpots: false,
           })
 
