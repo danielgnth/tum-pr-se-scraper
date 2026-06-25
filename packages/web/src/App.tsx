@@ -4,12 +4,14 @@ import CourseList from './pages/CourseList'
 
 export default function App() {
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <ScrollRestoration />
-      <Routes>
-        <Route path="/" element={<CourseList />} />
-        <Route path="/courses/:id" element={<CourseDetail />} />
-      </Routes>
-    </div>
+    <>
+      <div className="min-h-screen bg-background text-foreground">
+        <Routes>
+          <Route path="/" element={<CourseList />} />
+          <Route path="/courses/:id" element={<CourseDetail />} />
+        </Routes>
+      </div>
+      {/* <ScrollRestoration /> */}
+    </>
   )
 }

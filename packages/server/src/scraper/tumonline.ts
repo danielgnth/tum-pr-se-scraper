@@ -18,7 +18,7 @@ export async function scrapeTumonline(termId: string): Promise<ScrapedCourse[]> 
   const queue = await RequestQueue.open(`tumonline-${Date.now()}`)
 
   for (const courseNumber of COURSE_NUMBERS) {
-    const url = `${LIST_BASE}?$filter=courseNormKey-eq=LVEAB;filterTerm-like=${courseNumber};orgId-eq=1;termId-eq=${termId}&$orderBy=title=ascnf&$skip=0&$top=200`
+    const url = `${LIST_BASE}?$filter=courseNormKey-eq=LVEAB;filterTerm-like=${courseNumber};orgId-eq=1;termId-eq=${termId}&$orderBy=title=ascnf&$skip=0&$top=100`
     await queue.addRequest({ url, label: 'list', userData: { courseNumber } })
   }
 
