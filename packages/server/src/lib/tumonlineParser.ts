@@ -19,7 +19,7 @@ const listParser = new XMLParser({
   isArray: (name) => ['courses', 'lectureships'].includes(name),
 })
 
-const detailParser = new XMLParser()
+const detailParser = new XMLParser({ ignoreAttributes: false, removeNSPrefix: true })
 
 export function parseListResponse(
   xml: string,
@@ -48,12 +48,28 @@ export function parseListResponse(
 
 export function parseDetailResponse(xml: string): ParsedCourseDetail {
   const parsed = detailParser.parse(xml)
-  // TUMonline detail root element — confirmed as cpCourseDetailDto; adjust if API differs
-  const root = parsed?.cpCourseDetailDto ?? parsed?.cpCourseOverviewDto ?? {}
+  // Detail response: codata:resources > resource > content > cpCourseDetailDto
+  const dto =
+    parsed?.resources?.resource?.content?.cpCourseDetailDto ??
+    parsed?.cpCourseDetailDto ??
+    parsed?.cpCourseOverviewDto ??
+    {}
+
+  const descDto = dto.cpCourseDescriptionDto ?? {}
+  const courseDto = dto.cpCourseDto ?? {}
+
+  const languageDtos: Array<{ languageDto?: { key?: string }; mainLanguage?: boolean }> =
+    Array.isArray(courseDto.courseLanguageDtos)
+      ? courseDto.courseLanguageDtos
+      : courseDto.courseLanguageDtos
+        ? [courseDto.courseLanguageDtos]
+        : []
+  const mainLang = languageDtos.find((l) => l.mainLanguage === true)
+  const language = mainLang?.languageDto?.key ?? languageDtos[0]?.languageDto?.key ?? null
 
   return {
-    language: root.language?.key ?? null,
-    description: root.courseContent?.value ?? null,
-    prerequisites: root.prerequisites?.value ?? null,
+    language,
+    description: descDto.courseContent?.value ?? null,
+    prerequisites: descDto.previousKnowledge?.value ?? null,
   }
 }
