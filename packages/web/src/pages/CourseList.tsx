@@ -10,12 +10,11 @@ export default function CourseList() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [courses, setCourses] = useState<Course[]>([])
 
-  // All filter/sort state lives in the URL so it survives back-navigation
+  // All filter state lives in the URL so it survives back-navigation
   const search = searchParams.get('q') ?? ''
   const typesParam = searchParams.get('types') ?? ''
   const selectedTypes = typesParam ? typesParam.split(',') : []
   const leftoverOnly = searchParams.get('leftover') === 'true'
-  const sortBy = (searchParams.get('sort') as 'title' | 'ects') ?? 'title'
 
   function updateParams(updater: (p: URLSearchParams) => void) {
     setSearchParams(
@@ -44,11 +43,7 @@ export default function CourseList() {
     updateParams((p) => (v ? p.set('leftover', 'true') : p.delete('leftover')))
   }
 
-  function setSortBy(s: 'title' | 'ects') {
-    updateParams((p) => (s !== 'title' ? p.set('sort', s) : p.delete('sort')))
-  }
-
-  // Only refetch when API-side filters change (search and sort are client-side)
+  // Only refetch when API-side filters change
   const loadCourses = useCallback(async () => {
     const query: Record<string, string> = {}
     if (typesParam) query.type = typesParam
@@ -62,20 +57,17 @@ export default function CourseList() {
   }, [loadCourses])
 
   const filtered = useMemo(() => {
-    let list = courses
-    if (search) {
-      const q = search.toLowerCase()
-      list = list.filter(
+    if (!search) return [...courses].sort((a, b) => a.title.localeCompare(b.title))
+    const q = search.toLowerCase()
+    return courses
+      .filter(
         (c) =>
           c.title.toLowerCase().includes(q) ||
           c.courseNumber.toLowerCase().includes(q) ||
           (c.instructors as string[]).some((i) => i.toLowerCase().includes(q)),
       )
-    }
-    return [...list].sort((a, b) =>
-      sortBy === 'ects' ? (b.ects ?? 0) - (a.ects ?? 0) : a.title.localeCompare(b.title),
-    )
-  }, [courses, search, sortBy])
+      .sort((a, b) => a.title.localeCompare(b.title))
+  }, [courses, search])
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -88,8 +80,6 @@ export default function CourseList() {
           onTypeToggle={toggleType}
           leftoverOnly={leftoverOnly}
           onLeftoverToggle={() => setLeftoverOnly(!leftoverOnly)}
-          sortBy={sortBy}
-          onSortChange={setSortBy}
         />
         <p className="text-sm text-muted-foreground">{filtered.length} courses</p>
         <div className="flex flex-col gap-3">

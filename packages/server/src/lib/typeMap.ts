@@ -1,11 +1,10 @@
-const BASE: Record<string, string> = {
-  SE: 'Seminar',
-  PR: 'Praktikum',
+const TYPE_BY_COURSE_NUMBER: Record<string, string> = {
+  IN0012: 'Praktikum',
+  IN0014: 'Seminar',
+  IN2106: 'Master-Praktikum',
+  IN2107: 'Master-Seminar',
 }
 
-export function normalizeType(key: string, title: string): string {
-  const base = BASE[key]
-  if (!base) return key
-  const isMaster = /^master/i.test(title.trim())
-  return isMaster ? `Master-${base}` : base
+export function typeForCourseNumber(courseNumber: string): string {
+  return TYPE_BY_COURSE_NUMBER[courseNumber] ?? courseNumber
 }

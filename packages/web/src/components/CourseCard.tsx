@@ -21,8 +21,10 @@ export function CourseCard({ course }: { course: Course }) {
           <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
             <Badge variant="secondary">{course.type}</Badge>
             <span>{course.courseNumber}</span>
-            {course.ects != null && <span>{course.ects} ECTS</span>}
             {course.language && <span>{course.language}</span>}
+            {course.onlineMode && (
+              <span>{course.onlineMode === 'online' ? 'Online' : 'In person'}</span>
+            )}
             {(course.instructors as string[]).length > 0 && (
               <span>{(course.instructors as string[]).join(', ')}</span>
             )}

@@ -31,18 +31,23 @@ export default function CourseDetail() {
       <div className="flex flex-wrap gap-2 text-sm">
         <Badge variant="secondary">{course.type}</Badge>
         <span className="text-muted-foreground">{course.courseNumber}</span>
-        {course.ects != null && <span>{course.ects} ECTS</span>}
         {course.language && <span>{course.language}</span>}
+        {course.onlineMode && (
+          <Badge variant="outline">{course.onlineMode === 'online' ? 'Online' : 'In person'}</Badge>
+        )}
       </div>
       {(course.instructors as string[]).length > 0 && (
         <p className="text-sm">
           <strong>Instructors:</strong> {(course.instructors as string[]).join(', ')}
         </p>
       )}
-      {course.maxParticipants != null && (
-        <p className="text-sm">
-          <strong>Max participants:</strong> {course.maxParticipants}
-        </p>
+      {course.registrationInfo && (
+        <section>
+          <h2 className="font-semibold mb-1">Registration & Preliminary Meeting</h2>
+          <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+            {course.registrationInfo}
+          </p>
+        </section>
       )}
       {course.description && (
         <section>
@@ -50,11 +55,27 @@ export default function CourseDetail() {
           <p className="text-sm text-muted-foreground whitespace-pre-wrap">{course.description}</p>
         </section>
       )}
+      {course.courseObjective && (
+        <section>
+          <h2 className="font-semibold mb-1">Objectives</h2>
+          <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+            {course.courseObjective}
+          </p>
+        </section>
+      )}
       {course.prerequisites && (
         <section>
           <h2 className="font-semibold mb-1">Prerequisites</h2>
           <p className="text-sm text-muted-foreground whitespace-pre-wrap">
             {course.prerequisites}
+          </p>
+        </section>
+      )}
+      {course.teachingMethod && (
+        <section>
+          <h2 className="font-semibold mb-1">Teaching Method</h2>
+          <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+            {course.teachingMethod}
           </p>
         </section>
       )}

@@ -10,8 +10,6 @@ interface Props {
   onTypeToggle: (t: string) => void
   leftoverOnly: boolean
   onLeftoverToggle: () => void
-  sortBy: 'title' | 'ects'
-  onSortChange: (s: 'title' | 'ects') => void
 }
 
 export function FilterBar({
@@ -21,8 +19,6 @@ export function FilterBar({
   onTypeToggle,
   leftoverOnly,
   onLeftoverToggle,
-  sortBy,
-  onSortChange,
 }: Props) {
   return (
     <div className="flex flex-col gap-3">
@@ -49,27 +45,6 @@ export function FilterBar({
         >
           Leftover spots
         </Badge>
-        <div className="ml-auto flex gap-1 text-sm">
-          <button
-            type="button"
-            onClick={() => onSortChange('title')}
-            className={
-              sortBy === 'title' ? 'font-semibold' : 'text-muted-foreground hover:text-foreground'
-            }
-          >
-            A–Z
-          </button>
-          <span className="text-muted-foreground">·</span>
-          <button
-            type="button"
-            onClick={() => onSortChange('ects')}
-            className={
-              sortBy === 'ects' ? 'font-semibold' : 'text-muted-foreground hover:text-foreground'
-            }
-          >
-            ECTS ↓
-          </button>
-        </div>
       </div>
     </div>
   )

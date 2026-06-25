@@ -8,6 +8,13 @@
       "when": 1782380664372,
       "tag": "0000_luxuriant_obadiah_stane",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1782380664373,
+      "tag": "0001_course_fields_update",
+      "breakpoints": true
     }
   ]
 }

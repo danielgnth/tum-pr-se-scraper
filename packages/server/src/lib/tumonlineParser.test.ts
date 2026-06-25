@@ -48,6 +48,15 @@ const DETAIL_XML = `<?xml version="1.0" encoding="UTF-8"?>
           <previousKnowledge>
             <value>Master-level background in information systems or computer science.</value>
           </previousKnowledge>
+          <courseObjective>
+            <value>Students will present and discuss research papers.</value>
+          </courseObjective>
+          <courseRegistrationInfo>
+            <value>Pre-Course Meeting at 09.02.2026, 14:00 at https://teams.microsoft.com/meet/123</value>
+          </courseRegistrationInfo>
+          <teachingMethod>
+            <value>Seminar presentations and discussions.</value>
+          </teachingMethod>
         </cpCourseDescriptionDto>
       </cpCourseDetailDto>
     </content>
@@ -61,7 +70,6 @@ describe('parseListResponse', () => {
     const c = result[0]
     expect(c.tumonlineId).toBe('950883276')
     expect(c.title).toBe('Master Seminar - Hot Topics (IN2107, IN2396)')
-    expect(c.typeKey).toBe('SE')
     expect(c.instructors).toEqual(['Ingo Weber', 'Fabian Stiehle'])
     expect(c.courseNumber).toBe('IN2396')
     expect(c.termId).toBe('206')
@@ -69,11 +77,19 @@ describe('parseListResponse', () => {
 })
 
 describe('parseDetailResponse', () => {
-  test('extracts language, description, prerequisites', () => {
+  test('extracts language, description, prerequisites, objective, registrationInfo, teachingMethod', () => {
     const detail = parseDetailResponse(DETAIL_XML)
     expect(detail.language).toBe('EN')
     expect(detail.description).toContain('literature research')
     expect(detail.prerequisites).toContain('Master-level')
+    expect(detail.courseObjective).toContain('research papers')
+    expect(detail.registrationInfo).toContain('Pre-Course Meeting')
+    expect(detail.teachingMethod).toContain('presentations')
+  })
+
+  test('detects online mode from Teams link in registrationInfo', () => {
+    const detail = parseDetailResponse(DETAIL_XML)
+    expect(detail.onlineMode).toBe('online')
   })
 
   test('returns nulls when fields are absent', () => {
@@ -81,5 +97,8 @@ describe('parseDetailResponse', () => {
     expect(detail.language).toBeNull()
     expect(detail.description).toBeNull()
     expect(detail.prerequisites).toBeNull()
+    expect(detail.courseObjective).toBeNull()
+    expect(detail.registrationInfo).toBeNull()
+    expect(detail.onlineMode).toBeNull()
   })
 })

@@ -1,20 +1,9 @@
 import { HttpCrawler, RequestQueue } from 'crawlee'
 import type { NewCourse } from '../db/schema'
 import { parseDetailResponse, parseListResponse } from '../lib/tumonlineParser'
-import { normalizeType } from '../lib/typeMap'
+import { typeForCourseNumber } from '../lib/typeMap'
 
-const COURSE_NUMBERS = [
-  'IN0012',
-  'IN0014',
-  'IN2106',
-  'IN2107',
-  'IN2128',
-  'IN2129',
-  'IN2130',
-  'IN2131',
-  'IN2396',
-  'IN2397',
-]
+const COURSE_NUMBERS = ['IN0012', 'IN0014', 'IN2106', 'IN2107']
 
 const LIST_BASE = 'https://campus.tum.de/tumonline/ee/rest/slc.tm.cp/student/courses'
 const DETAIL_BASE = 'https://campus.tum.de/tumonline/ee/rest/slc.tm.cp/student/courses'
@@ -24,19 +13,12 @@ export type ScrapedCourse = Omit<NewCourse, 'scrapeRunId'>
 
 export async function scrapeTumonline(termId: string): Promise<ScrapedCourse[]> {
   const results: ScrapedCourse[] = []
-  const detailMap = new Map<
-    string,
-    {
-      language: string | null
-      description: string | null
-      prerequisites: string | null
-    }
-  >()
+  const detailMap = new Map<string, ReturnType<typeof parseDetailResponse>>()
 
   const queue = await RequestQueue.open(`tumonline-${Date.now()}`)
 
   for (const courseNumber of COURSE_NUMBERS) {
-    const url = `${LIST_BASE}?$filter=courseNormKey-eq=LVEAB;filterTerm-like=${courseNumber};orgId-eq=1;termId-eq=${termId}&$orderBy=title=ascnf&$skip=0&$top=100`
+    const url = `${LIST_BASE}?$filter=courseNormKey-eq=LVEAB;filterTerm-like=${courseNumber};orgId-eq=1;termId-eq=${termId}&$orderBy=title=ascnf&$skip=0&$top=200`
     await queue.addRequest({ url, label: 'list', userData: { courseNumber } })
   }
 
@@ -61,12 +43,14 @@ export async function scrapeTumonline(termId: string): Promise<ScrapedCourse[]> 
             courseNumber: course.courseNumber,
             termId: course.termId,
             title: course.title,
-            type: normalizeType(course.typeKey, course.title),
-            ects: null,
+            type: typeForCourseNumber(course.courseNumber),
             language: null,
             description: null,
+            courseObjective: null,
             prerequisites: null,
-            maxParticipants: null,
+            teachingMethod: null,
+            registrationInfo: null,
+            onlineMode: null,
             instructors: course.instructors,
             tumonlineUrl: `${UI_BASE}/${course.tumonlineId}?$ctx=lang=DE&$scrollTo=toc_overview`,
             hasLeftoverSpots: false,

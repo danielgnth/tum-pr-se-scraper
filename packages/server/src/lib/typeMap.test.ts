@@ -1,24 +1,24 @@
 import { describe, expect, test } from 'bun:test'
-import { normalizeType } from './typeMap'
+import { typeForCourseNumber } from './typeMap'
 
-describe('normalizeType', () => {
-  test('SE + non-master title → Seminar', () => {
-    expect(normalizeType('SE', 'Seminar - Advanced Topics')).toBe('Seminar')
+describe('typeForCourseNumber', () => {
+  test('IN0012 → Praktikum', () => {
+    expect(typeForCourseNumber('IN0012')).toBe('Praktikum')
   })
 
-  test('SE + master title → Master-Seminar', () => {
-    expect(normalizeType('SE', 'Master Seminar - Hot Topics')).toBe('Master-Seminar')
+  test('IN0014 → Seminar', () => {
+    expect(typeForCourseNumber('IN0014')).toBe('Seminar')
   })
 
-  test('PR + non-master title → Praktikum', () => {
-    expect(normalizeType('PR', 'Praktikum - Systems')).toBe('Praktikum')
+  test('IN2106 → Master-Praktikum', () => {
+    expect(typeForCourseNumber('IN2106')).toBe('Master-Praktikum')
   })
 
-  test('PR + master title → Master-Praktikum', () => {
-    expect(normalizeType('PR', 'Master-Praktikum - Cloud')).toBe('Master-Praktikum')
+  test('IN2107 → Master-Seminar', () => {
+    expect(typeForCourseNumber('IN2107')).toBe('Master-Seminar')
   })
 
-  test('unknown key passes through', () => {
-    expect(normalizeType('XX', 'Some Course')).toBe('XX')
+  test('unknown course number passes through', () => {
+    expect(typeForCourseNumber('IN9999')).toBe('IN9999')
   })
 })
