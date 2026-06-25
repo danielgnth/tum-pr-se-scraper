@@ -3,7 +3,18 @@ import { CheerioCrawler, RequestQueue } from 'crawlee'
 const CIT_URL =
   'https://www.cit.tum.de/cit/studium/studierende/pruefungsangelegenheiten-module/informatik/praktika-seminare/'
 
-const COURSE_NUMBER_RE = /\bIN\d{4,5}\b/g
+// Strips the type prefix and IN-code suffix, leaving a normalized title core
+// e.g. "Master-Seminar - Collaborative Robotics (IN2107)" → "collaborative robotics"
+export function normalizeTitleCore(raw: string): string {
+  const text = raw.replace(/ /g, ' ').trim()
+  // Remove trailing (IN...) course code suffix
+  const withoutCodes = text.replace(/\s*\([^)]*\)\s*$/, '').trim()
+  if (!withoutCodes) return ''
+  // Take everything after the first "- " or ": " separator to skip the type prefix
+  const m = withoutCodes.match(/^.+?(?::\s+|\s[-–—]\s)(.+)$/)
+  const core = m ? m[1] : withoutCodes
+  return core.toLowerCase().replace(/[-–—]/g, ' ').replace(/\s+/g, ' ').trim()
+}
 
 export async function scrapeCit(): Promise<Set<string>> {
   const found = new Set<string>()
@@ -13,9 +24,6 @@ export async function scrapeCit(): Promise<Set<string>> {
   const crawler = new CheerioCrawler({
     requestQueue: queue,
     requestHandler: async ({ $ }) => {
-      // The leftover-spots sections are accordion items whose button text contains
-      // "Restplätze" / "Remaining spots". The button's aria-controls attribute holds
-      // the id of the collapsible body div.  We collect text from all such bodies.
       $('button[aria-controls]').each((_i, el) => {
         const btn = $(el)
         if (!btn.text().includes('Restpl')) return
@@ -23,9 +31,20 @@ export async function scrapeCit(): Promise<Set<string>> {
         const sectionId = btn.attr('aria-controls')
         if (!sectionId) return
 
-        const sectionText = $(`#${sectionId}`).text()
-        const matches = sectionText.match(COURSE_NUMBER_RE) ?? []
-        for (const m of matches) found.add(m)
+        const section = $(`#${sectionId}`)
+        // Replace <br> with newlines so each title becomes its own line
+        section.find('br').replaceWith('\n')
+
+        const lines = section
+          .text()
+          .split('\n')
+          .map((l) => l.trim())
+          .filter(Boolean)
+
+        for (const line of lines) {
+          const core = normalizeTitleCore(line)
+          if (core) found.add(core)
+        }
       })
     },
   })

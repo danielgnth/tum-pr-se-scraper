@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm'
 import { db } from '../db/client'
 import { courses, scrapeRuns } from '../db/schema'
-import { scrapeCit } from './cit'
+import { normalizeTitleCore, scrapeCit } from './cit'
 import { scrapeTumonline } from './tumonline'
 
 export async function runScrape(): Promise<{ scrapeRunId: number; coursesUpserted: number }> {
@@ -9,7 +9,7 @@ export async function runScrape(): Promise<{ scrapeRunId: number; coursesUpserte
 
   try {
     const termId = process.env.TUMONLINE_TERM_ID ?? '206'
-    const [scraped, leftoverNumbers] = await Promise.all([scrapeTumonline(termId), scrapeCit()])
+    const [scraped, leftoverCores] = await Promise.all([scrapeTumonline(termId), scrapeCit()])
 
     const seen = new Set<string>()
     const rows = scraped
@@ -21,7 +21,7 @@ export async function runScrape(): Promise<{ scrapeRunId: number; coursesUpserte
       .map((c) => ({
         ...c,
         scrapeRunId: run.id,
-        hasLeftoverSpots: leftoverNumbers.has(c.courseNumber),
+        hasLeftoverSpots: leftoverCores.has(normalizeTitleCore(c.title)),
       }))
 
     if (rows.length > 0) {
