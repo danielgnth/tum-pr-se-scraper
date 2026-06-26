@@ -1,5 +1,7 @@
 # TUM PR/SE Scraper
 
+> **Note:** Course listings and dates are only valid for the Winter Semester 2026.
+
 A personal tool for browsing and tracking TUM practical and seminar courses. It scrapes course listings from TUMonline, stores them in a database, and serves a web UI for filtering, favoriting, and managing your applications.
 
 ## What it does
