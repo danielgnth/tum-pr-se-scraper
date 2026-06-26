@@ -6,6 +6,7 @@ FROM base AS deps
 COPY package.json bun.lock bunfig.toml ./
 COPY packages/server/package.json ./packages/server/package.json
 COPY packages/web/package.json ./packages/web/package.json
+COPY packages/mcp/package.json ./packages/mcp/package.json
 RUN bun install --frozen-lockfile
 
 # Build the web SPA
