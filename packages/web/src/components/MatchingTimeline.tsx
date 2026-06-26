@@ -16,31 +16,35 @@ export interface TimelineConfig {
   timelineResultsDate: string
 }
 
+const DATE_FMT: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' }
+const fmt = (s: string) => new Date(s).toLocaleDateString(undefined, DATE_FMT)
+const fmtRange = (a: string, b: string) => `${fmt(a)} – ${fmt(b)}`
+
 function buildPhases(cfg: TimelineConfig): Phase[] {
   const d = (s: string) => new Date(s)
   const eod = (s: string) => new Date(`${s}T23:59:59`)
   return [
     {
       label: 'Browse',
-      detail: cfg.timelineBrowseStart.slice(5).replace('-', ' '),
+      detail: fmt(cfg.timelineBrowseStart),
       start: d(cfg.timelineBrowseStart),
       end: eod(cfg.timelineBrowseStart),
     },
     {
       label: 'Preliminary Meetings',
-      detail: `${cfg.timelineMeetingsStart.slice(5).replace('-', ' ')} – ${cfg.timelineMeetingsEnd.slice(5).replace('-', ' ')}`,
+      detail: fmtRange(cfg.timelineMeetingsStart, cfg.timelineMeetingsEnd),
       start: d(cfg.timelineMeetingsStart),
       end: eod(cfg.timelineMeetingsEnd),
     },
     {
       label: 'Matching',
-      detail: `${cfg.timelineMatchingStart.slice(5).replace('-', ' ')} – ${cfg.timelineMatchingEnd.slice(5).replace('-', ' ')}`,
+      detail: fmtRange(cfg.timelineMatchingStart, cfg.timelineMatchingEnd),
       start: d(cfg.timelineMatchingStart),
       end: eod(cfg.timelineMatchingEnd),
     },
     {
       label: 'Results',
-      detail: cfg.timelineResultsDate.slice(5).replace('-', ' '),
+      detail: fmt(cfg.timelineResultsDate),
       start: d(cfg.timelineResultsDate),
       end: eod(cfg.timelineResultsDate),
     },
