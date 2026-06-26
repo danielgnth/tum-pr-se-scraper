@@ -8,6 +8,7 @@ const LS_KEYS = [
   'course-notes',
   'course-overrides',
   'course-ext-applications',
+  'course-ranking',
 ] as const
 
 function collectBackup(): Record<string, unknown> {
@@ -39,7 +40,10 @@ interface Props {
 
 export function BackupPanel({ onClose }: Props) {
   const [code, setCode] = useState('')
-  const [status, setStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
+  const [status, setStatus] = useState<{
+    type: 'success' | 'error'
+    message: string
+  } | null>(null)
   const [busy, setBusy] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -48,7 +52,9 @@ export function BackupPanel({ onClose }: Props) {
     setBusy(true)
     setStatus(null)
     try {
-      const res = await api.api.backup.$post({ json: { code: code.trim(), data: collectBackup() } })
+      const res = await api.api.backup.$post({
+        json: { code: code.trim(), data: collectBackup() },
+      })
       if (!res.ok) throw new Error('Server error')
       setStatus({ type: 'success', message: 'Backup saved.' })
     } catch {
@@ -63,7 +69,9 @@ export function BackupPanel({ onClose }: Props) {
     setBusy(true)
     setStatus(null)
     try {
-      const res = await api.api.backup[':code'].$get({ param: { code: code.trim() } })
+      const res = await api.api.backup[':code'].$get({
+        param: { code: code.trim() },
+      })
       if (res.status === 404) {
         setStatus({ type: 'error', message: 'No backup found for that code.' })
         return
@@ -81,7 +89,9 @@ export function BackupPanel({ onClose }: Props) {
 
   function handleExportFile() {
     const data = collectBackup()
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+    const blob = new Blob([JSON.stringify(data, null, 2)], {
+      type: 'application/json',
+    })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
