@@ -38,3 +38,10 @@ docker compose up --build
 |---|---|---|
 | `DATABASE_URL` | `postgresql://tum:tum@localhost:5432/courses` | Postgres connection string |
 | `PORT` | `3000` | Port the server listens on |
+| `TUMONLINE_TERM_ID` | `207` | TUMonline term ID to scrape (207 = WS 2026/27) |
+| `TIMELINE_BROWSE_START` | `2026-06-22` | Start of the browse phase |
+| `TIMELINE_MEETINGS_START` | `2026-06-25` | Start of the preliminary meetings phase |
+| `TIMELINE_MEETINGS_END` | `2026-07-09` | End of the preliminary meetings phase |
+| `TIMELINE_MATCHING_START` | `2026-07-10` | Start of the TUM Matching phase |
+| `TIMELINE_MATCHING_END` | `2026-07-15` | End of the TUM Matching phase |
+| `TIMELINE_RESULTS_DATE` | `2026-07-27` | Date when Matching results are published |

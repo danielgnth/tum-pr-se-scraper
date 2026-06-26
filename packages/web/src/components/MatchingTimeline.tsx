@@ -7,32 +7,45 @@ interface Phase {
   end: Date
 }
 
-const PHASES: Phase[] = [
-  {
-    label: 'Browse',
-    detail: '22 Jun',
-    start: new Date('2026-06-22'),
-    end: new Date('2026-06-24T23:59:59'),
-  },
-  {
-    label: 'Preliminary Meetings',
-    detail: '25 Jun – 9 Jul',
-    start: new Date('2026-06-25'),
-    end: new Date('2026-07-09T23:59:59'),
-  },
-  {
-    label: 'Matching',
-    detail: '10 – 15 Jul',
-    start: new Date('2026-07-10'),
-    end: new Date('2026-07-15T23:59:59'),
-  },
-  {
-    label: 'Results',
-    detail: '27 Jul',
-    start: new Date('2026-07-27'),
-    end: new Date('2026-07-27T23:59:59'),
-  },
-]
+export interface TimelineConfig {
+  timelineBrowseStart: string
+  timelineMeetingsStart: string
+  timelineMeetingsEnd: string
+  timelineMatchingStart: string
+  timelineMatchingEnd: string
+  timelineResultsDate: string
+}
+
+function buildPhases(cfg: TimelineConfig): Phase[] {
+  const d = (s: string) => new Date(s)
+  const eod = (s: string) => new Date(`${s}T23:59:59`)
+  return [
+    {
+      label: 'Browse',
+      detail: cfg.timelineBrowseStart.slice(5).replace('-', ' '),
+      start: d(cfg.timelineBrowseStart),
+      end: eod(cfg.timelineBrowseStart),
+    },
+    {
+      label: 'Preliminary Meetings',
+      detail: `${cfg.timelineMeetingsStart.slice(5).replace('-', ' ')} – ${cfg.timelineMeetingsEnd.slice(5).replace('-', ' ')}`,
+      start: d(cfg.timelineMeetingsStart),
+      end: eod(cfg.timelineMeetingsEnd),
+    },
+    {
+      label: 'Matching',
+      detail: `${cfg.timelineMatchingStart.slice(5).replace('-', ' ')} – ${cfg.timelineMatchingEnd.slice(5).replace('-', ' ')}`,
+      start: d(cfg.timelineMatchingStart),
+      end: eod(cfg.timelineMatchingEnd),
+    },
+    {
+      label: 'Results',
+      detail: cfg.timelineResultsDate.slice(5).replace('-', ' '),
+      start: d(cfg.timelineResultsDate),
+      end: eod(cfg.timelineResultsDate),
+    },
+  ]
+}
 
 function daysUntil(date: Date): number {
   return Math.ceil((date.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
@@ -44,16 +57,17 @@ function getPhaseStatus(phase: Phase, now: number): 'past' | 'active' | 'future'
   return 'future'
 }
 
-export function MatchingTimeline() {
+export function MatchingTimeline({ config }: { config: TimelineConfig }) {
   const now = Date.now()
-  const activeIdx = PHASES.findIndex((p) => getPhaseStatus(p, now) === 'active')
+  const phases = buildPhases(config)
+  const activeIdx = phases.findIndex((p) => getPhaseStatus(p, now) === 'active')
 
   return (
     <div className="rounded-lg border bg-card px-4 py-3">
       <div className="flex items-start gap-0">
-        {PHASES.map((phase, i) => {
+        {phases.map((phase, i) => {
           const status = getPhaseStatus(phase, now)
-          const isLast = i === PHASES.length - 1
+          const isLast = i === phases.length - 1
           const daysLeft = status === 'active' ? daysUntil(phase.end) : null
 
           return (
@@ -73,7 +87,7 @@ export function MatchingTimeline() {
                     <div
                       className={cn(
                         'h-0.5 flex-1',
-                        i < (activeIdx === -1 ? PHASES.length : activeIdx)
+                        i < (activeIdx === -1 ? phases.length : activeIdx)
                           ? 'bg-muted-foreground/30'
                           : 'bg-muted-foreground/15',
                       )}

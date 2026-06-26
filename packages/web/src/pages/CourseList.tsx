@@ -52,13 +52,15 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
   if (typesParam) query.type = typesParam
   if (leftoverOnly) query.leftoverOnly = 'true'
 
-  const [coursesRes, runsRes] = await Promise.all([
+  const [coursesRes, runsRes, configRes] = await Promise.all([
     api.api.courses.$get({ query }),
     api.api['scrape-runs'].$get(),
+    api.api.config.$get(),
   ])
 
   let courses = (await coursesRes.json()) as Course[]
   const lastRun = ((await runsRes.json()) as ScrapeRun[])[0] ?? null
+  const timelineConfig = await configRes.json()
 
   if (search) {
     const q = search.toLowerCase()
@@ -90,7 +92,7 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
 
   courses = applyOverrides(courses, loadOverrides())
 
-  return { courses, lastRun }
+  return { courses, lastRun, timelineConfig }
 }
 
 function generateMarkdown(courses: Course[], notes: Record<string, string>): string {
@@ -150,6 +152,7 @@ export default function CourseList(_: Route.ComponentProps) {
 
   const courses = loaderData?.courses ?? []
   const lastRun = loaderData?.lastRun ?? null
+  const timelineConfig = loaderData?.timelineConfig
 
   const search = searchParams.get('q') ?? ''
   const typesParam = searchParams.get('types') ?? ''
@@ -301,7 +304,7 @@ export default function CourseList(_: Route.ComponentProps) {
         </div>
       </div>
       {showBackup && <BackupPanel onClose={() => setShowBackup(false)} />}
-      <MatchingTimeline />
+      {timelineConfig && <MatchingTimeline config={timelineConfig} />}
       <FilterBar
         search={search}
         onSearch={setSearch}
@@ -336,7 +339,7 @@ export default function CourseList(_: Route.ComponentProps) {
         return pendingCount > 0 ? (
           <p className="text-xs text-amber-600 font-medium -mt-2">
             {pendingCount} external application{pendingCount !== 1 ? 's' : ''} still pending before
-            Matching (Jul 10)
+            Matching ({timelineConfig?.timelineMatchingStart ?? 'Matching'})
           </p>
         ) : null
       })()}
