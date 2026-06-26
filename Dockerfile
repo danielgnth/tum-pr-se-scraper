@@ -1,5 +1,6 @@
-FROM oven/bun:1 AS base
+FROM oven/bun:1-alpine AS base
 WORKDIR /app
+RUN apk add --no-cache nodejs npm
 
 # Install all workspace deps
 FROM base AS deps
@@ -14,6 +15,7 @@ FROM deps AS builder
 COPY packages/server ./packages/server
 COPY packages/web ./packages/web
 RUN bun run --cwd packages/web build
+
 
 # Production image
 FROM oven/bun:1-slim AS runner
