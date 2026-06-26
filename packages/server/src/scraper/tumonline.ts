@@ -43,7 +43,7 @@ export async function scrapeTumonline(termId: string): Promise<ScrapedCourse[]> 
             courseNumber: course.courseNumber,
             termId: course.termId,
             title: course.title,
-            type: typeForCourseNumber(course.courseNumber),
+            types: [typeForCourseNumber(course.courseNumber)],
             language: null,
             description: null,
             courseObjective: null,

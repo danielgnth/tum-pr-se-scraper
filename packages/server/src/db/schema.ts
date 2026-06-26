@@ -28,7 +28,7 @@ export const courses = pgTable(
       .references(() => scrapeRuns.id),
     courseNumber: text('course_number').notNull(),
     title: text('title').notNull(),
-    type: text('type').notNull(),
+    types: text('types').array().notNull().default([]),
     termId: text('term_id').notNull(),
     language: text('language'),
     description: text('description'),
@@ -44,9 +44,16 @@ export const courses = pgTable(
     tumonlineUrl: text('tumonline_url').notNull(),
     hasLeftoverSpots: boolean('has_leftover_spots').notNull().default(false),
   },
-  (table) => [unique().on(table.tumonlineId, table.scrapeRunId)],
+  (table) => [unique().on(table.tumonlineId)],
 )
+
+export const backups = pgTable('backups', {
+  code: text('code').primaryKey(),
+  data: jsonb('data').notNull(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+})
 
 export type ScrapeRun = typeof scrapeRuns.$inferSelect
 export type Course = typeof courses.$inferSelect
 export type NewCourse = typeof courses.$inferInsert
+export type Backup = typeof backups.$inferSelect

@@ -1,8 +1,9 @@
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import type { ExtAppState } from '@/lib/externalApplications'
 import { isMeetingOutdated, parseMeetingDate, relativeMeetingTime } from '@/lib/meetingDate'
 import { cn } from '@/lib/utils'
-import { EyeOff, NotebookPen, Star } from 'lucide-react'
+import { ClipboardCheck, ClipboardList, EyeOff, NotebookPen, Star } from 'lucide-react'
 import { Link } from 'react-router'
 import type { Course } from 'server/src/db/schema'
 
@@ -11,8 +12,10 @@ interface Props {
   isFavorite?: boolean
   isDismissed?: boolean
   note?: string
+  extAppState?: ExtAppState
   onFavorite?: (id: string) => void
   onDismiss?: (id: string) => void
+  onExtAppToggle?: (id: string) => void
 }
 
 export function CourseCard({
@@ -20,8 +23,10 @@ export function CourseCard({
   isFavorite,
   isDismissed,
   note,
+  extAppState,
   onFavorite,
   onDismiss,
+  onExtAppToggle,
 }: Props) {
   const meetingDate = parseMeetingDate(course.preliminaryMeetingDate)
   const isPast = meetingDate ? meetingDate.getTime() < Date.now() : null
@@ -34,7 +39,7 @@ export function CourseCard({
   }
 
   return (
-    <Link to={`/courses/${course.id}`} className="block no-underline" preventScrollReset>
+    <Link to={`/courses/${course.id}`} className="block no-underline">
       <Card
         className={cn(
           'cursor-pointer hover:shadow-md transition-shadow gap-2',
@@ -49,6 +54,31 @@ export function CourseCard({
               {note && <NotebookPen className="w-3.5 h-3.5 text-muted-foreground/50 shrink-0" />}
               {course.hasLeftoverSpots && (
                 <Badge className="text-xs bg-green-100 text-gray-500">Spots available</Badge>
+              )}
+              {onExtAppToggle && (
+                <button
+                  type="button"
+                  onClick={(e) => stopAndCall(e, onExtAppToggle)}
+                  className={cn(
+                    'p-1 rounded transition-colors',
+                    extAppState === 'needed' && 'text-amber-500 hover:text-amber-600',
+                    extAppState === 'done' && 'text-green-600 hover:text-green-700',
+                    !extAppState && 'text-muted-foreground/40 hover:text-muted-foreground',
+                  )}
+                  title={
+                    !extAppState
+                      ? 'Mark: external application needed'
+                      : extAppState === 'needed'
+                        ? 'Mark: external application sent'
+                        : 'Clear external application flag'
+                  }
+                >
+                  {extAppState === 'done' ? (
+                    <ClipboardCheck className="w-4 h-4" />
+                  ) : (
+                    <ClipboardList className="w-4 h-4" />
+                  )}
+                </button>
               )}
               <button
                 type="button"
@@ -79,7 +109,11 @@ export function CourseCard({
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
-            <Badge variant="secondary">{course.type}</Badge>
+            {course.types.map((t) => (
+              <Badge key={t} variant="secondary">
+                {t}
+              </Badge>
+            ))}
             <span>{course.courseNumber}</span>
             {course.language && <span>{course.language}</span>}
             {course.onlineMode && (

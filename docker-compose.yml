@@ -9,6 +9,22 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tum -d courses"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    image: ghcr.io/danielgnth/tum-pr-se-scraper:latest
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://tum:tum@postgres:5432/courses
+    depends_on:
+      postgres:
+        condition: service_healthy
 
 volumes:
   postgres_data:

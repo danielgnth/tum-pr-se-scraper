@@ -63,7 +63,7 @@ export function PreliminaryMeetingSection({ date, platform, link }: Props) {
             rel="noopener noreferrer"
             className="text-blue-600 hover:underline dark:text-blue-400"
           >
-            Join meeting →
+            {link.includes('nav.tum.de') ? 'Navigate →' : 'Join meeting →'}
           </a>
         )}
       </div>

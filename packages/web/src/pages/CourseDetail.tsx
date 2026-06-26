@@ -1,11 +1,18 @@
 import { PreliminaryMeetingSection } from '@/components/PreliminaryMeetingSection'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import {
+  type CourseOverride,
+  applyOverride,
+  clearOverride,
+  loadOverrides,
+  saveOverride,
+} from '@/lib/courseOverrides'
 import { useCoursePreferences } from '@/lib/coursePreferences'
 import { cn } from '@/lib/utils'
 import { EyeOff, Star } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
-import { useNavigate, useParams } from 'react-router'
+import { useLoaderData, useLocation, useNavigate, useRevalidator } from 'react-router'
 import type { Course } from 'server/src/db/schema'
 import { api } from '../api/client'
 
@@ -28,24 +35,53 @@ function saveNote(id: string, text: string) {
   } catch {}
 }
 
+export async function clientLoader({ params }: { params: { id?: string } }) {
+  const id = params.id
+  if (!id) return { course: null, override: {} as CourseOverride }
+  const res = await api.api.courses[':id'].$get({ param: { id } })
+  if (!res.ok) return { course: null, override: {} as CourseOverride }
+  const course = (await res.json()) as Course
+  const override = loadOverrides()[course.tumonlineId] ?? {}
+  return { course: applyOverride(course, override), override }
+}
+
 export default function CourseDetail() {
-  const { id } = useParams<{ id: string }>()
+  const loaderData = useLoaderData<typeof clientLoader>()
+  const { revalidate } = useRevalidator()
   const navigate = useNavigate()
-  const [course, setCourse] = useState<Course | null>(null)
+  const location = useLocation()
   const [note, setNoteText] = useState('')
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const { favorites, dismissed, toggleFavorite, toggleDismiss } = useCoursePreferences()
 
+  const [editingOverride, setEditingOverride] = useState(false)
+  const [draftDate, setDraftDate] = useState('')
+  const [draftPlatform, setDraftPlatform] = useState('')
+  const [draftRoom, setDraftRoom] = useState('')
+  const [draftLink, setDraftLink] = useState('')
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: dev SSR workaround — same as CourseList
   useEffect(() => {
-    // biome-ignore lint/style/noNonNullAssertion: id is always present when this route renders
-    api.api.courses[':id'].$get({ param: { id: id! } }).then(async (res) => {
-      if (res.ok) setCourse((await res.json()) as Course)
-    })
-  }, [id])
+    if (!loaderData) navigate(location, { replace: true })
+  }, [])
+
+  const course = loaderData?.course
+  const activeOverride = loaderData?.override ?? {}
+  const hasOverride = Object.keys(activeOverride).length > 0
 
   useEffect(() => {
     if (course) setNoteText(loadNote(course.tumonlineId))
   }, [course])
+
+  useEffect(() => {
+    if (course) {
+      setDraftDate(course.preliminaryMeetingDate ?? '')
+      setDraftPlatform(course.preliminaryMeetingPlatform ?? '')
+      setDraftRoom(activeOverride.room ?? '')
+      // If the link was auto-generated from a room override, don't pre-fill the link field
+      setDraftLink(activeOverride.room ? '' : (course.preliminaryMeetingLink ?? ''))
+    }
+  }, [course, activeOverride])
 
   function handleNoteChange(text: string) {
     if (!course) return
@@ -54,7 +90,37 @@ export default function CourseDetail() {
     saveTimer.current = setTimeout(() => saveNote(course.tumonlineId, text), 400)
   }
 
+  function handleSaveOverride() {
+    if (!course) return
+    const override: CourseOverride = {}
+    if (draftDate.trim()) override.preliminaryMeetingDate = draftDate.trim()
+    if (draftPlatform.trim()) override.preliminaryMeetingPlatform = draftPlatform.trim()
+    if (draftRoom.trim()) {
+      override.room = draftRoom.trim()
+      // nav link is auto-generated from room; don't store an explicit link
+    } else if (draftLink.trim()) {
+      override.preliminaryMeetingLink = draftLink.trim()
+    }
+    if (Object.keys(override).length > 0) {
+      saveOverride(course.tumonlineId, override)
+    } else {
+      clearOverride(course.tumonlineId)
+    }
+    revalidate()
+    setEditingOverride(false)
+  }
+
+  function handleClearOverride() {
+    if (!course) return
+    clearOverride(course.tumonlineId)
+    revalidate()
+    setEditingOverride(false)
+  }
+
   if (!course) return <div className="p-8 text-center text-muted-foreground">Loading…</div>
+
+  const inputClass =
+    'w-full rounded-md border bg-background px-3 py-1.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring'
 
   return (
     <div className="max-w-2xl mx-auto p-4 flex flex-col gap-4">
@@ -100,7 +166,11 @@ export default function CourseDetail() {
         )}
       </div>
       <div className="flex flex-wrap gap-2 text-sm">
-        <Badge variant="secondary">{course.type}</Badge>
+        {course.types.map((t) => (
+          <Badge key={t} variant="secondary">
+            {t}
+          </Badge>
+        ))}
         <span className="text-muted-foreground">{course.courseNumber}</span>
         {course.language && <span>{course.language}</span>}
         {course.onlineMode && (
@@ -117,6 +187,100 @@ export default function CourseDetail() {
         platform={course.preliminaryMeetingPlatform}
         link={course.preliminaryMeetingLink}
       />
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-semibold text-muted-foreground">Meeting override</span>
+          {hasOverride && (
+            <span className="text-xs font-medium text-amber-600 dark:text-amber-400">Active</span>
+          )}
+          <button
+            type="button"
+            onClick={() => setEditingOverride((v) => !v)}
+            className="ml-auto text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            {editingOverride ? 'Cancel' : 'Edit'}
+          </button>
+          {hasOverride && !editingOverride && (
+            <button
+              type="button"
+              onClick={handleClearOverride}
+              className="text-xs text-muted-foreground hover:text-destructive transition-colors"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+        {editingOverride && (
+          <div className="flex flex-col gap-2 pl-0.5">
+            <div className="flex flex-col gap-1">
+              <label htmlFor="override-date" className="text-xs text-muted-foreground">
+                Date
+              </label>
+              <input
+                id="override-date"
+                type="text"
+                value={draftDate}
+                onChange={(e) => setDraftDate(e.target.value)}
+                placeholder="e.g. Mon 14.07.2025 14:00"
+                className={inputClass}
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label htmlFor="override-platform" className="text-xs text-muted-foreground">
+                Platform
+              </label>
+              <input
+                id="override-platform"
+                type="text"
+                value={draftPlatform}
+                onChange={(e) => setDraftPlatform(e.target.value)}
+                placeholder="e.g. Zoom, Teams, In person"
+                className={inputClass}
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label htmlFor="override-room" className="text-xs text-muted-foreground">
+                Room
+              </label>
+              <input
+                id="override-room"
+                type="text"
+                value={draftRoom}
+                onChange={(e) => setDraftRoom(e.target.value)}
+                placeholder="e.g. MW 2050"
+                className={inputClass}
+              />
+              <p className="text-xs text-muted-foreground/60">
+                Generates a nav.tum.de link · overrides the link field below
+              </p>
+            </div>
+            <div className="flex flex-col gap-1">
+              <label htmlFor="override-link" className="text-xs text-muted-foreground">
+                Link
+              </label>
+              <input
+                id="override-link"
+                type="text"
+                value={draftLink}
+                onChange={(e) => setDraftLink(e.target.value)}
+                placeholder="https://… (for online meetings)"
+                className={inputClass}
+                disabled={!!draftRoom.trim()}
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button size="sm" onClick={handleSaveOverride}>
+                Save
+              </Button>
+              {hasOverride && (
+                <Button size="sm" variant="ghost" onClick={handleClearOverride}>
+                  Clear override
+                </Button>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
       {course.registrationInfo && (
         <section>
           <h2 className="font-semibold mb-1">Registration & Preliminary Meeting</h2>

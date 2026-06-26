@@ -28,6 +28,14 @@ export default function Root() {
   )
 }
 
+export function HydrateFallback() {
+  return (
+    <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
+      <p className="text-muted-foreground">Loading…</p>
+    </div>
+  )
+}
+
 export function links() {
   return [{ rel: 'stylesheet', href: cssHref }]
 }

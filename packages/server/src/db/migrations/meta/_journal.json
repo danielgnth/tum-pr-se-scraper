@@ -22,6 +22,20 @@
       "when": 1782380664374,
       "tag": "0002_preliminary_meeting",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1782380664375,
+      "tag": "0003_types_upsert",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1782380664376,
+      "tag": "0004_backups",
+      "breakpoints": true
     }
   ]
 }
