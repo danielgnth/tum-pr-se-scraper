@@ -9,7 +9,7 @@ export async function runScrape(): Promise<{ scrapeRunId: number; coursesUpserte
   const [run] = await db.insert(scrapeRuns).values({ status: 'running' }).returning()
 
   try {
-    const termId = process.env.TUMONLINE_TERM_ID ?? '206'
+    const termId = process.env.TUMONLINE_TERM_ID ?? '207'
     const [scraped, leftoverCores] = await Promise.all([scrapeTumonline(termId), scrapeCit()])
 
     // Group by tumonlineId, merging types for courses listed under multiple IN numbers
