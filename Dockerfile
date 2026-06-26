@@ -13,7 +13,7 @@ RUN bun install --frozen-lockfile
 FROM deps AS builder
 COPY packages/server ./packages/server
 COPY packages/web ./packages/web
-RUN cd packages/web && bun run build
+RUN bun run --cwd packages/web build
 
 # Production image
 FROM oven/bun:1-slim AS runner
@@ -21,11 +21,11 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 ENV PORT=3000
-ENV STATIC_DIR=packages/web/dist/client
+ENV STATIC_DIR=packages/web/build/client
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY packages/server ./packages/server
-COPY --from=builder /app/packages/web/dist ./packages/web/dist
+COPY --from=builder /app/packages/web/build/client ./packages/web/build/client
 
 EXPOSE 3000
 
