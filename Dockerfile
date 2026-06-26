@@ -32,4 +32,4 @@ COPY --from=builder /app/packages/web/build/client ./packages/web/build/client
 EXPOSE 3000
 
 # Run migrations then start the server
-CMD ["sh", "-c", "cd packages/server && bunx drizzle-kit migrate && cd /app && bun packages/server/src/index.ts"]
+CMD ["sh", "-c", "bun /app/packages/server/src/db/migrate.ts && bun /app/packages/server/src/index.ts"]
